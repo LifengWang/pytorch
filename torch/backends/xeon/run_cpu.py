@@ -194,13 +194,14 @@ Multi-instance inference
 Memory allocator
 ----------------
 
-`--memory-allocator` can be used to enable different memory allcator.
+`--memory-allocator` can be used to enable different memory allocator.
 
 .. code-block:: bash
 
    --memory-allocator default
    --memory-allocator tcmalloc
    --memory-allocator jemalloc
+
 
 """
 
