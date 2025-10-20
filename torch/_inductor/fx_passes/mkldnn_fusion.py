@@ -9,7 +9,7 @@ from torch._dynamo.utils import counters
 from torch.fx.experimental.symbolic_shapes import has_free_symbols
 from torch.utils._ordered_set import OrderedSet
 
-from .. import ir
+from .. import ir, mkldnn_ir
 from ..lowering import lowerings as L
 from ..pattern_matcher import (
     Arg,
@@ -760,6 +760,33 @@ if torch._C._has_mkldnn:
             isinstance(_other.data, ir.BaseView)
             or len(_other.get_inputs_that_alias_output()) > 0
         )
+
+    def _can_be_linear_binary_inplace(_other):
+        if isinstance(_other.data, ir.BaseView):
+            try:
+                # It can be inplaced when _other is the 2D to 3D view of a CppTemplateBuffer/QLinearPointwiseBinaryPT2E
+                # because if there is a view of CppTemplateBuffer/QLinearPointwiseBinaryPT2E,
+                # CppTemplateBuffer/QLinearPointwiseBinaryPT2E will not be used directly but the view.
+                if isinstance(_other.data.data.data, (ir.CppTemplateBuffer, mkldnn_ir.QLinearPointwiseBinaryPT2E)):
+                    return True
+                else:
+                    # This is a special case on VIT model:
+                    # QLinearPointwiseBinaryPT2E(sum) -> QLinearPointwiseBinaryPT2E(sum) -> ...
+                    # That means the output of previous QLinearPointwiseBinaryPT2E is the input x2 of current QLinearPointwiseBinaryPT2E.
+                    # use V.graph.operations to check if _other is a view of the output
+                    # of previous QLinearPointwiseBinaryPT2E (the inputs[6]).
+                    if (
+                        isinstance(V.graph.operations[-1], mkldnn_ir.QLinearPointwiseBinaryPT2E)
+                        and _other.data.data.data == V.graph.operations[-1].inputs[6]
+                    ):
+                        return True
+                return False
+            except AttributeError:
+                return False
+        elif len(_other.get_inputs_that_alias_output()) > 0:
+            return False
+        else:
+            return True
 
     def _register_binary_unary_maybe_inplace_fusion_lowering(
         pattern,
