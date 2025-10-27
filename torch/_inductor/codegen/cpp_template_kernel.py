@@ -213,6 +213,7 @@ class CppTemplateKernel(CppKernel):
         self.local_buffers[name] = buf
         ctype = f"{DTYPE_TO_CPP[dtype]}"
         numel = f"{cexpr_index(buf.get_numel())}"
+        return f"{ctype} {name}[7*32*1*32];"
         return f"auto _{name} = std::make_unique<{ctype}[]>({numel}); auto {name} = _{name}.get();"
 
     def define_stack_allocated_buffer(
@@ -234,6 +235,7 @@ class CppTemplateKernel(CppKernel):
         buf = self.local_buffers[name]
         ctype = f"{DTYPE_TO_CPP[buf.layout.dtype]}"
         numel = f"{cexpr_index(buf.get_numel())}"
+        return ""
         return f"if (_{name} == nullptr) {{ _{name} = std::make_unique<{ctype}[]>({numel}); {name} = _{name}.get(); }}"
 
     def release_buffer(self, name):

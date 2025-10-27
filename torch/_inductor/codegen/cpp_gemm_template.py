@@ -1083,6 +1083,12 @@ class CppGemmTemplate(CppTemplate):
                 W_packed_constant = V.graph.add_tensor_constant(W_packed)
                 new_input_nodes[1] = W_packed_constant
 
+                if has_bias:
+                    bias_node = new_input_nodes[2]
+                    bias_bf16 = V.graph.constants[bias_node.get_name()]
+                    if bias_bf16.dtype == torch.bfloat16:
+                        bias_fp32 = bias_bf16.to(torch.float32)
+                        V.graph.constants[bias_node.get_name()] = bias_fp32
                 # Prune unused tensors
                 prune_tensors(input_nodes, new_input_nodes)
 
