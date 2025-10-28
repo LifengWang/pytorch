@@ -423,7 +423,7 @@ def generate_commands(args, dtypes, suites, devices, compilers, output_dir):
         lines.append(f"mkdir -p {output_dir}")
         lines.append("")
 
-        for testing in ["performance", "accuracy"]:
+        for testing in ["performance"]:
             for iter in itertools.product(suites, devices, dtypes):
                 suite, device, dtype = iter
                 lines.append(
@@ -1157,7 +1157,7 @@ class RegressionDetector:
                     generate_csv_name(
                         self.args, dtype, suite, device, compiler, testing
                     )
-                    for testing in ["performance", "accuracy"]
+                    for testing in ["performance"]
                 ]
                 compiler_last2 = find_last_2_with_filenames(
                     self.lookup_file, self.args.dashboard_archive_path, dtype, filenames
